@@ -51,9 +51,8 @@
   .msg-hdr { background:var(--orange); padding:9px 14px; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:var(--white); letter-spacing:1px; text-transform:uppercase; }
   .msg-body { padding:12px 14px; font-size:13px; color:var(--g7); line-height:1.6; }
 
-  /* SELECTOR MES */
   .mes-nav { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-  .mes-btn { background:var(--white); border:none; border-radius:10px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.1); font-size:18px; color:var(--g7); flex-shrink:0; transition:background .15s; }
+  .mes-btn { background:var(--white); border:none; border-radius:10px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.1); font-size:18px; color:var(--g7); flex-shrink:0; }
   .mes-btn:active { background:var(--g2); }
   .mes-btn:disabled { opacity:.3; cursor:default; }
   .mes-select-wrap { flex:1; position:relative; }
@@ -80,6 +79,11 @@
   .wk.em { color:#ccc; font-size:11px; }
   .wk.hi { color:var(--green); }
   .wk.lo { color:var(--red); }
+
+  .op-row { display:grid; padding:7px 12px; border-bottom:1px solid var(--g1); align-items:center; background:#fff8f2; }
+  .op-lbl { font-size:11px; font-weight:600; color:var(--orange); padding-right:6px; line-height:1.3; }
+  .op-val { text-align:center; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:700; color:var(--orange); }
+  .op-val.em { color:#ccc; font-size:11px; }
 
   .frow { display:grid; padding:6px 12px; border-bottom:1px solid var(--g1); align-items:center; background:#fafafa; }
   .frow-lbl { font-size:10px; font-weight:600; color:var(--g6); }
@@ -127,14 +131,14 @@
 <div class="upd" id="upd">Cargando datos...</div>
 
 <div class="sec">
-  <div class="sec-title">Mi Perfil</div>
+  <div class="sec-title">Mi Situación</div>
   <div class="stats">
     <div class="stat vac"><div class="stat-ico">🏖️</div><div class="stat-num org" id="s-vac">—</div><div class="stat-name">Días vacaciones restantes</div></div>
-    <div class="stat fal"><div class="stat-ico">📋</div><div class="stat-num red" id="s-fal">—</div><div class="stat-name">Faltas</div></div>
-    <div class="stat pun"><div class="stat-ico">⏱️</div><div class="stat-num grn" id="s-pun">—</div><div class="stat-name">Puntualidad</div></div>
+    <div class="stat fal"><div class="stat-ico">📋</div><div class="stat-num red" id="s-fal">—</div><div class="stat-name">Faltas en el año</div></div>
+    <div class="stat pun"><div class="stat-ico">⏱️</div><div class="stat-num grn" id="s-pun">—</div><div class="stat-name">Puntualidad mensual</div></div>
   </div>
   <div class="msg-box" id="msg-box">
-    <div class="msg-hdr">📢 Avisos</div>
+    <div class="msg-hdr">📢 Mensaje de tu jefe</div>
     <div class="msg-body" id="msg-body"></div>
   </div>
 </div>
@@ -144,7 +148,7 @@
   <div class="loading" id="ldg"><div class="spinner"></div>Cargando datos...</div>
 </div>
 
-<div class="footer">Actualizado por <strong>Almacén</strong> · KPI 2026</div>
+<div class="footer">Actualizado por <strong>Almacén SAI</strong> · KPI 2026</div>
 
 <script>
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSRVxK0x8kXSP4QmReaMT52vBR71mHfpsmH8aShvklRSa13FU5evETPDJ7Pi4VtFHAxFLN6Ip_rBCEJ/pub?gid=431422592&single=true&output=csv';
@@ -173,21 +177,18 @@ function cl(v) {
   if (v === undefined || v === null) return '';
   return String(v).trim().replace(/^nan$/i, '');
 }
-
 function fmt(v) {
   const s = cl(v); if (!s) return '—';
   const n = parseFloat(s);
   if (isNaN(n) || n === 0) return '—';
   return Number.isInteger(n) ? String(n) : n.toFixed(2);
 }
-
 function fmtStat(v) {
   const s = cl(v); if (!s) return '—';
   const n = parseFloat(s);
   if (isNaN(n)) return s;
   return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(1);
 }
-
 function colorCls(v) {
   const n = parseFloat(v);
   if (isNaN(n) || n === 0) return 'em';
@@ -195,13 +196,12 @@ function colorCls(v) {
   if (n < 70) return 'lo';
   return '';
 }
-
 function gs(cols) {
   return `grid-template-columns: 1fr repeat(${cols}, ${cols > 4 ? '38px' : '46px'})`;
 }
 
 function buildMonth(data) {
-  const { mes, numSems, fechas, indicadores, faltasVals, puntVals, totSems, totalMes } = data;
+  const { mes, numSems, fechas, indicadores, opVals, faltasVals, puntVals, totSems, totalMes } = data;
   const cols = fechas.length;
   const tmN = parseFloat(totalMes);
   const badge = (!isNaN(tmN) && tmN > 0) ? tmN.toFixed(2) : '0.00';
@@ -222,6 +222,16 @@ function buildMonth(data) {
     ind.vals.forEach(v => { h += `<div class="wk ${colorCls(v)}">${fmt(v)}</div>`; });
     h += `</div>`;
   });
+
+  // OPs - Explosiones Surtidas — siempre
+  h += `<div class="op-row" style="${style}"><div class="op-lbl">📦 OPs - Explosiones Surtidas</div>`;
+  for (let c = 0; c < cols; c++) {
+    const v = opVals ? cl(opVals[c]) : '';
+    const n = parseFloat(v);
+    const has = !isNaN(n) && n > 0;
+    h += `<div class="op-val ${has ? '' : 'em'}">${has ? (Number.isInteger(n) ? n : n.toFixed(0)) : '—'}</div>`;
+  }
+  h += `</div>`;
 
   // Faltas — siempre
   h += `<div class="frow" style="${style}"><div class="frow-lbl">📋 Faltas</div>`;
@@ -270,7 +280,6 @@ async function load() {
     const txt = await res.text();
     const rows = parseCSV(txt);
 
-    // Cabecera
     let hdrIdx = 0;
     for (let i = 0; i < Math.min(8, rows.length); i++) {
       if (rows[i].join('').toLowerCase().includes('total alm')) { hdrIdx = i; break; }
@@ -293,7 +302,6 @@ async function load() {
     document.getElementById('s-fal').textContent = fmtStat(valRow[6]);
     document.getElementById('s-pun').textContent = fmtStat(valRow[7]);
 
-    // Mensaje
     for (let i = 0; i < rows.length; i++) {
       if (cl(rows[i][0]).toLowerCase().startsWith('mensaje')) {
         let msg = '';
@@ -303,7 +311,6 @@ async function load() {
       }
     }
 
-    // Meses
     for (let i = 0; i < rows.length; i++) {
       const c0 = cl(rows[i][0]).toUpperCase();
       if (!MESES_ES.includes(c0)) continue;
@@ -327,11 +334,11 @@ async function load() {
       if (cols === 0) continue;
 
       const indicadores = [];
-      let faltasVals = null, puntVals = null, totSems = [], totalMes = '';
+      let opVals = null, faltasVals = null, puntVals = null, totSems = [], totalMes = '';
 
       for (let j = startInd; j < rows.length; j++) {
         const r = rows[j];
-        const rc0 = cl(r[0]).toLowerCase();
+        const rc0 = cl(r[0]).toLowerCase().trim();
         if (MESES_ES.includes(cl(r[0]).toUpperCase())) break;
         if (rc0 === 'total') {
           totSems = [];
@@ -340,18 +347,22 @@ async function load() {
           if (!isNaN(tmRaw)) totalMes = String(tmRaw);
           break;
         }
+        if (rc0 === 'op' || rc0 === 'op ') {
+          opVals = []; for (let c = 2; c < 2+cols; c++) opVals.push(cl(r[c])); continue;
+        }
         if (rc0 === 'faltas') { faltasVals = []; for (let c = 2; c < 2+cols; c++) faltasVals.push(cl(r[c])); continue; }
         if (rc0 === 'puntualidad') { puntVals = []; for (let c = 2; c < 2+cols; c++) puntVals.push(cl(r[c])); continue; }
-        // Ignorar fila OP y vacías
-        if (!rc0 || rc0 === 'indicador' || rc0.includes('numero') || rc0 === 'op' || rc0 === 'op ') continue;
+        if (!rc0 || rc0 === 'indicador' || rc0.includes('numero')) continue;
+
         const vals = []; for (let c = 2; c < 2+cols; c++) vals.push(cl(r[c]));
         indicadores.push({ nombre: cl(r[0]), meta: cl(r[1]), vals });
       }
 
+      if (!opVals) opVals = Array(cols).fill('');
       if (!faltasVals) faltasVals = Array(cols).fill('');
       if (!puntVals) puntVals = Array(cols).fill('');
 
-      allMeses.push({ mes: mesNombre, numSems, fechas, indicadores, faltasVals, puntVals, totSems, totalMes });
+      allMeses.push({ mes: mesNombre, numSems, fechas, indicadores, opVals, faltasVals, puntVals, totSems, totalMes });
     }
 
     const cont = document.getElementById('meses');
@@ -374,7 +385,6 @@ async function load() {
       <div id="mes-content"></div>
     `;
 
-    // Abrir en el mes más reciente con datos
     let mesInicial = 0;
     for (let i = allMeses.length - 1; i >= 0; i--) {
       if (parseFloat(allMeses[i].totalMes) > 0) { mesInicial = i; break; }
